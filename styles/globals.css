@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 88 38% 97%;
+  --foreground: 149 30% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 149 30% 14%;
+  --primary: 160 84% 24%;
+  --primary-foreground: 88 40% 98%;
+  --secondary: 89 35% 90%;
+  --secondary-foreground: 149 25% 22%;
+  --muted: 92 20% 92%;
+  --muted-foreground: 149 14% 34%;
+  --accent: 40 90% 82%;
+  --accent-foreground: 30 56% 22%;
+  --border: 95 24% 83%;
+  --input: 95 24% 83%;
+  --ring: 160 84% 24%;
+  --radius: 1rem;
+}
+
+.dark {
+  --background: 149 30% 6%;
+  --foreground: 88 38% 94%;
+  --card: 149 30% 8%;
+  --card-foreground: 88 38% 94%;
+  --primary: 160 70% 45%;
+  --primary-foreground: 149 30% 6%;
+  --secondary: 149 25% 12%;
+  --secondary-foreground: 88 38% 90%;
+  --muted: 149 20% 10%;
+  --muted-foreground: 149 14% 65%;
+  --accent: 40 80% 65%;
+  --accent-foreground: 149 30% 6%;
+  --border: 149 24% 15%;
+  --input: 149 24% 15%;
+  --ring: 160 70% 45%;
+}
+
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background text-foreground antialiased selection:bg-primary/20;
+  min-height: 100vh;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  background-image: 
+    radial-gradient(circle at 10% -10%, hsla(160, 84%, 24%, 0.15), transparent 40%),
+    radial-gradient(circle at 90% 10%, hsla(40, 90%, 82%, 0.15), transparent 40%);
+  background-attachment: fixed;
+}
+
+.dark body {
+  background-image: 
+    radial-gradient(circle at 10% -10%, hsla(160, 84%, 44%, 0.08), transparent 40%),
+    radial-gradient(circle at 90% 10%, hsla(40, 90%, 62%, 0.08), transparent 40%);
+}
+
+main {
+  @apply mx-auto w-full max-w-6xl px-4 pb-20 pt-4;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-display tracking-tight;
+}
+
+.tg-card {
+  @apply relative overflow-hidden rounded-2xl border border-white/20 bg-white/40 p-6 shadow-xl backdrop-blur-xl transition-all duration-300;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.dark .tg-card {
+  @apply border-white/5 bg-black/40;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.2),
+    0 10px 15px -3px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.tg-card::before {
+  content: "";
+  @apply absolute inset-0 -z-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none;
+}
+
+.tg-button {
+  @apply relative inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:translate-y-[-1px] hover:shadow-xl active:translate-y-[0] disabled:cursor-not-allowed disabled:opacity-60 overflow-hidden;
+}
+
+.tg-button::after {
+  content: "";
+  @apply absolute inset-0 bg-white/10 opacity-0 transition-opacity hover:opacity-100;
+}
+
+.tg-button-ghost {
+  @apply inline-flex items-center justify-center rounded-xl border border-border bg-white/50 px-6 py-2.5 text-sm font-medium transition-all hover:bg-secondary/80 backdrop-blur-sm;
+}
+
+.dark .tg-button-ghost {
+  @apply bg-white/5 hover:bg-white/10;
+}

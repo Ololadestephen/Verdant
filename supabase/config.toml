@@ -1,0 +1,4 @@
+project_id = "verdant"
+
+[functions.verify-submission]
+verify_jwt = false
