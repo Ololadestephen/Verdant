@@ -56,7 +56,6 @@ export function CameraCapture() {
     }
 
     try {
-      // Ensure video has valid dimensions before drawing
       if (video.videoWidth === 0 || video.videoHeight === 0) {
         throw new Error("Camera not ready yet — please wait a moment and try again.");
       }
@@ -71,7 +70,6 @@ export function CameraCapture() {
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
       if (!blob) throw new Error("Failed to capture image from camera.");
 
-      // GPS is attempted but optional for testing
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
