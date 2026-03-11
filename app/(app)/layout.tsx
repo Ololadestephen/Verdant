@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 import { TopWalletControls } from "@/components/wallet/top-wallet-controls";
@@ -20,7 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:scale-110 transition-transform">
-                <img src="/favicon.svg" alt="Verdant Logo" className="h-full w-full object-cover" />
+                <Image src="/favicon.svg" alt="Verdant Logo" width={32} height={32} className="h-full w-full object-cover" />
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-xl font-bold leading-none">Verdant</h1>
