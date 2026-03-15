@@ -129,7 +129,12 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const { submissionId } = (await request.json()) as { submissionId?: string };
+    const body = (await request.json()) as { submissionId?: string; latitude?: number; longitude?: number };
+    const { submissionId } = body;
+    // Coords passed directly from submission create route — avoids PostGIS re-parsing
+    const payloadLat = typeof body.latitude === "number" ? body.latitude : NaN;
+    const payloadLng = typeof body.longitude === "number" ? body.longitude : NaN;
+
     if (!submissionId) {
       return new Response(JSON.stringify({ error: "submissionId is required" }), { status: 400 });
     }
@@ -161,23 +166,9 @@ Deno.serve(async (request) => {
       return new Response(JSON.stringify({ status: "rejected", reason: "duplicate_hash" }), { status: 200 });
     }
 
-    // Fetch and parse GPS from Supabase geography column
-    // Supabase serializes geography(point,4326) as GeoJSON: {type:"Point", coordinates:[lng, lat]}
-    const { data: geoRow } = await supabase
-      .from("submissions")
-      .select("location")
-      .eq("id", submission.id)
-      .single();
-
-    let latitude = NaN;
-    let longitude = NaN;
-    try {
-      const loc = (geoRow as { location?: { type?: string; coordinates?: number[] } } | null)?.location;
-      if (loc?.coordinates && Array.isArray(loc.coordinates) && loc.coordinates.length >= 2) {
-        longitude = loc.coordinates[0]; // GeoJSON order is [lng, lat]
-        latitude = loc.coordinates[1];
-      }
-    } catch { /* ignore parse errors — isValidGps will reject */ }
+    // Use coordinates passed directly from the API route (avoids PostGIS GeoJSON parsing issues)
+    const latitude = payloadLat;
+    const longitude = payloadLng;
 
     if (!isFresh(submission.captured_at)) {
       await rejectSubmission({ submissionId: submission.id, sessionId: submission.session_id, reason: "Capture is older than freshness window." });

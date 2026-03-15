@@ -49,10 +49,11 @@ export async function POST(request: Request) {
       longitude
     });
 
-    // Fire-and-forget edge function invocation
+    // Fire-and-forget edge function invocation — pass raw coords to avoid PostGIS re-parsing
     supabaseAdmin.functions.invoke("verify-submission", {
-      body: { submissionId: submission.id, walletAddress }
+      body: { submissionId: submission.id, walletAddress, latitude, longitude }
     }).catch(console.error);
+
 
     return NextResponse.json({ submissionId: submission.id, status: "processing" }, { status: 201 });
   } catch (error) {
