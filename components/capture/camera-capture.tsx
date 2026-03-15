@@ -117,6 +117,14 @@ export function CameraCapture() {
 
       setPreviewUrl(URL.createObjectURL(blob));
       setCapture({ file, capturedAt, latitude, longitude });
+
+      // Stop the camera stream to release hardware after a successful capture
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        setStream(null);
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred.");
     } finally {

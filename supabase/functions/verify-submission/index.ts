@@ -161,16 +161,23 @@ Deno.serve(async (request) => {
       return new Response(JSON.stringify({ status: "rejected", reason: "duplicate_hash" }), { status: 200 });
     }
 
+    // Fetch and parse GPS from Supabase geography column
+    // Supabase serializes geography(point,4326) as GeoJSON: {type:"Point", coordinates:[lng, lat]}
     const { data: geoRow } = await supabase
       .from("submissions")
       .select("location")
       .eq("id", submission.id)
       .single();
 
-    const geoText = JSON.stringify(geoRow?.location ?? {});
-    const coordinates = geoText.match(/-?\d+\.?\d*/g)?.map(Number) ?? [];
-    const longitude = coordinates[0];
-    const latitude = coordinates[1];
+    let latitude = NaN;
+    let longitude = NaN;
+    try {
+      const loc = (geoRow as { location?: { type?: string; coordinates?: number[] } } | null)?.location;
+      if (loc?.coordinates && Array.isArray(loc.coordinates) && loc.coordinates.length >= 2) {
+        longitude = loc.coordinates[0]; // GeoJSON order is [lng, lat]
+        latitude = loc.coordinates[1];
+      }
+    } catch { /* ignore parse errors — isValidGps will reject */ }
 
     if (!isFresh(submission.captured_at)) {
       await rejectSubmission({ submissionId: submission.id, sessionId: submission.session_id, reason: "Capture is older than freshness window." });
@@ -178,9 +185,10 @@ Deno.serve(async (request) => {
     }
 
     if (!isValidGps(latitude, longitude)) {
-      await rejectSubmission({ submissionId: submission.id, sessionId: submission.session_id, reason: "Invalid or missing GPS coordinates." });
+      await rejectSubmission({ submissionId: submission.id, sessionId: submission.session_id, reason: `Invalid or missing GPS coordinates. Got: lat=${latitude}, lng=${longitude}` });
       return new Response(JSON.stringify({ status: "rejected", reason: "invalid_gps" }), { status: 200 });
     }
+
 
     const { data: signed, error: signedError } = await supabase.storage
       .from("grass-photos")
