@@ -98,7 +98,11 @@ export async function submitStake(amount: number, wallet: SupportedWallet): Prom
 
   let tx: { transaction_hash: string };
   try {
-    tx = await walletAccount.execute(call);
+    // Pass explicit maxFee so Braavos skips internal fee estimation.
+    // Braavos shows "Missing RPC node for sepolia-alpha" when it tries to estimate fees internally.
+    // 0.001 STRK (1e15 wei) is a safe upper bound for Sepolia staking transactions.
+    const maxFee = BigInt("1000000000000000"); // 0.001 STRK in wei
+    tx = await walletAccount.execute(call, undefined, { maxFee });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     if (
