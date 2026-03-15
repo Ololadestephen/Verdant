@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.50.2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4.1-mini";
+const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o-mini";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !OPENAI_API_KEY) {
   throw new Error("Missing required environment variables.");
@@ -60,46 +60,29 @@ function classifyVisionPayload(text: string): { grass: boolean; outdoor: boolean
 }
 
 async function analyzeImage(publicUrl: string) {
-  const response = await openai.responses.create({
+  // Use stable Chat Completions API with vision support (more reliable than Responses API)
+  const response = await openai.chat.completions.create({
     model: OPENAI_MODEL,
-    input: [
+    max_tokens: 256,
+    response_format: { type: "json_object" },
+    messages: [
       {
         role: "user",
         content: [
           {
-            type: "input_text",
-            text:
-              "You are an image verifier for a game. Return strict JSON with keys grass(boolean), outdoor(boolean), indoor(boolean), labels(string[]), confidence(number 0-1). Detect if the image clearly contains real grass/vegetation outdoors."
+            type: "text",
+            text: "You are an image verifier for a touch-grass game. Analyse the photo and return ONLY a JSON object with these exact keys: grass (boolean - true if real grass/vegetation is clearly visible), outdoor (boolean - true if clearly outdoors), indoor (boolean - true if image appears to be indoors), labels (array of up to 10 descriptive string labels), confidence (number 0-1 representing how confident you are the person is genuinely outdoors touching grass)."
           },
           {
-            type: "input_image",
-            image_url: publicUrl
+            type: "image_url",
+            image_url: { url: publicUrl, detail: "low" }
           }
         ]
       }
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: "touch_grass_verification",
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["grass", "outdoor", "indoor", "labels", "confidence"],
-          properties: {
-            grass: { type: "boolean" },
-            outdoor: { type: "boolean" },
-            indoor: { type: "boolean" },
-            labels: { type: "array", items: { type: "string" }, maxItems: 15 },
-            confidence: { type: "number", minimum: 0, maximum: 1 }
-          }
-        },
-        strict: true
-      }
-    }
+    ]
   });
 
-  return classifyVisionPayload(response.output_text ?? "{}");
+  return classifyVisionPayload(response.choices[0]?.message?.content ?? "{}");
 }
 
 async function rejectSubmission(params: {
