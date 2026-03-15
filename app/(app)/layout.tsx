@@ -3,6 +3,8 @@ import Image from "next/image";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 import { TopWalletControls } from "@/components/wallet/top-wallet-controls";
+import { SessionGuardProvider } from "@/components/session/session-guard-provider";
+
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard" },
@@ -16,6 +18,8 @@ const navItems = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
+      <SessionGuardProvider />
+
       <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-background/60 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 h-16">
           <div className="flex items-center gap-8">
