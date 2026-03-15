@@ -20,15 +20,6 @@ type StarknetWindow = Window & {
   starknet?: WalletProvider;
 };
 
-const STAKE_ABI = [
-  {
-    type: "function",
-    name: "stake",
-    inputs: [{ name: "amount", type: "core::integer::u256" }],
-    outputs: []
-  }
-] as const;
-
 const NFT_ABI = [
   {
     type: "function",
