@@ -1,17 +1,19 @@
 "use client";
 
-import { AccountInterface, Contract, RpcProvider, uint256 } from "starknet";
+import { Account, RpcProvider, uint256 } from "starknet";
+import type { AccountInterface } from "starknet";
 
 import { publicEnv } from "@/lib/public-env";
 
 export type SupportedWallet = "argentX" | "braavos";
 
 type WalletProvider = {
-  enable: () => Promise<unknown>;
+  enable: (options?: { starknetVersion?: string }) => Promise<string[]>;
   isConnected: boolean;
   selectedAddress?: string;
   selectedAccount?: string;
   account?: AccountInterface & { address?: string };
+  provider?: { chainId?: string };
 };
 
 type StarknetWindow = Window & {
@@ -20,17 +22,6 @@ type StarknetWindow = Window & {
   starknet?: WalletProvider;
 };
 
-const NFT_ABI = [
-  {
-    type: "function",
-    name: "mint_milestone",
-    inputs: [
-      { name: "to", type: "core::starknet::contract_address::ContractAddress" },
-      { name: "milestone", type: "core::integer::u32" }
-    ],
-    outputs: [{ name: "token_id", type: "core::integer::u256" }]
-  }
-] as const;
 
 function getProvider(name: SupportedWallet): WalletProvider | undefined {
   if (typeof window === "undefined") return undefined;
@@ -66,7 +57,8 @@ export async function connectWallet(name: SupportedWallet): Promise<{ address: s
   if (!provider) {
     throw new Error(`${name} wallet extension is unavailable.`);
   }
-  const enableResult = await provider.enable();
+  // Pass starknetVersion to ensure Braavos uses the correct network/RPC
+  const enableResult = await provider.enable({ starknetVersion: "v5" });
   const address = resolveAddress(provider, enableResult);
   if (!address) {
     throw new Error(`Unable to read ${name} wallet address.`);
@@ -79,16 +71,25 @@ export function getReadProvider(): RpcProvider {
 }
 
 export async function submitStake(amount: number, wallet: SupportedWallet): Promise<string> {
-  const provider = getProvider(wallet);
-  const account = provider?.account;
-  if (!provider || !account) {
+  const walletProvider = getProvider(wallet);
+  if (!walletProvider) {
+    throw new Error("Wallet not connected. Please reconnect your wallet and try again.");
+  }
+
+  // Re-enable to ensure we have a fresh account reference
+  await walletProvider.enable({ starknetVersion: "v5" }).catch(() => null);
+
+  const walletAccount = walletProvider.account;
+  const address = walletProvider.selectedAddress ?? walletProvider.account?.address;
+
+  if (!walletAccount || !address) {
     throw new Error("Wallet not connected. Please reconnect your wallet and try again.");
   }
 
   const amountWei = uint256.bnToUint256(BigInt(Math.floor(amount * 1e18)));
   const contractAddress = publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT;
 
-  // Build call directly without Contract.populate to avoid any serialisation issues
+  // Build call with proper calldata encoding for u256
   const call = {
     contractAddress,
     entrypoint: "stake",
@@ -97,9 +98,8 @@ export async function submitStake(amount: number, wallet: SupportedWallet): Prom
 
   let tx: { transaction_hash: string };
   try {
-    tx = await account.execute(call);
+    tx = await walletAccount.execute(call);
   } catch (err: unknown) {
-    // Wallet popup was dismissed or user rejected
     const message = err instanceof Error ? err.message : String(err);
     if (
       message.toLowerCase().includes("user abort") ||
@@ -119,19 +119,24 @@ export async function submitStake(amount: number, wallet: SupportedWallet): Prom
   return tx.transaction_hash;
 }
 
-
 export async function mintMilestoneNft(recipient: string, milestone: number, wallet: SupportedWallet): Promise<string> {
-  const provider = getProvider(wallet);
-  const account = provider?.account;
-  if (!provider || !account) {
+  const walletProvider = getProvider(wallet);
+  const account = walletProvider?.account;
+  if (!walletProvider || !account) {
     throw new Error("Wallet not connected.");
   }
 
-  const contract = new Contract(NFT_ABI, publicEnv.NEXT_PUBLIC_STARKNET_NFT_CONTRACT, account);
-  const call = await contract.populate("mint_milestone", {
-    to: recipient,
-    milestone
+  const rpcProvider = getReadProvider();
+  const address = walletProvider.selectedAddress ?? account.address;
+  if (!address) throw new Error("Wallet address unavailable.");
+
+  const connectedAccount = new Account(rpcProvider, address, account as unknown as string);
+  const calldata = [recipient, milestone.toString(), "0"];
+  const tx = await connectedAccount.execute({
+    contractAddress: publicEnv.NEXT_PUBLIC_STARKNET_NFT_CONTRACT,
+    entrypoint: "mint_milestone",
+    calldata
   });
-  const tx = await account.execute(call);
   return tx.transaction_hash;
 }
+
