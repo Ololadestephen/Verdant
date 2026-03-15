@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { Camera, RefreshCw, MapPin, CheckCircle2, AlertCircle, Maximize2 } from "lucide-react";
+import { Camera, RefreshCw, MapPin, CheckCircle2, AlertCircle, Maximize2, FlipHorizontal2 } from "lucide-react";
 
 import { useAppStore } from "@/hooks/use-app-store";
 
 async function blobToFile(blob: Blob, fileName: string): Promise<File> {
   return new File([blob], fileName, { type: "image/jpeg" });
 }
+
+type FacingMode = "user" | "environment";
 
 export function CameraCapture() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -17,6 +19,7 @@ export function CameraCapture() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [facingMode, setFacingMode] = useState<FacingMode>("environment");
 
   const { setCapture, clearCapture, capture: captureState } = useAppStore();
 
@@ -28,11 +31,17 @@ export function CameraCapture() {
     }
   };
 
-  const requestPermissions = async () => {
+  const startStream = useCallback(async (facing: FacingMode) => {
+    // Stop any existing stream first
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setStream(null);
+    }
     setError(null);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: { facingMode: facing },
         audio: false
       });
       streamRef.current = mediaStream;
@@ -41,6 +50,14 @@ export function CameraCapture() {
       const message = err instanceof Error ? err.message : "Unable to access camera.";
       setError(message);
     }
+  }, []);
+
+  const requestPermissions = () => void startStream(facingMode);
+
+  const flipCamera = async () => {
+    const next: FacingMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(next);
+    await startStream(next);
   };
 
   const capture = async () => {
@@ -70,24 +87,36 @@ export function CameraCapture() {
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
       if (!blob) throw new Error("Failed to capture image from camera.");
 
+      // Get GPS — we require a real position; 0,0 is rejected by the verifier
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
-          timeout: 10_000,
+          timeout: 15_000,
           maximumAge: 0
         });
-      }).catch(() => null);
+      }).catch((err: GeolocationPositionError | Error) => {
+        const msg = "code" in err
+          ? err.code === 1
+            ? "Location permission denied. Please allow GPS in your browser settings."
+            : err.code === 2
+            ? "GPS signal unavailable. Please try outdoors with a clear sky view."
+            : "GPS timed out. Ensure location services are enabled."
+          : "Unable to get location.";
+        throw new Error(msg);
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Sanity check — reject obviously invalid coordinates
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || (latitude === 0 && longitude === 0)) {
+        throw new Error("Invalid GPS reading. Please move to an area with better signal and try again.");
+      }
 
       const file = await blobToFile(blob, `verdant-proof-${Date.now()}.jpg`);
       const capturedAt = new Date().toISOString();
 
       setPreviewUrl(URL.createObjectURL(blob));
-      setCapture({
-        file,
-        capturedAt,
-        latitude: position?.coords.latitude ?? 0,
-        longitude: position?.coords.longitude ?? 0
-      });
+      setCapture({ file, capturedAt, latitude, longitude });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred.");
     } finally {
@@ -106,7 +135,9 @@ export function CameraCapture() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold">Proof of Outdoor</h2>
-          <p className="text-xs text-muted-foreground mt-1 text-red-500 md:text-muted-foreground underline md:no-underline">Verify your physical presence to unlock rewards.</p>
+          <p className="text-xs text-muted-foreground mt-1 text-red-500 md:text-muted-foreground underline md:no-underline">
+            Verify your physical presence to unlock rewards.
+          </p>
         </div>
         <div className="h-10 w-10 rounded-xl bg-accent/20 flex items-center justify-center">
           <Camera className="h-6 w-6 text-accent-foreground" />
@@ -120,11 +151,7 @@ export function CameraCapture() {
               <Camera className="h-8 w-8 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-muted-foreground mb-6">Camera access required for verification.</p>
-            <button
-              type="button"
-              onClick={() => void requestPermissions()}
-              className="tg-button h-11 px-8"
-            >
+            <button type="button" onClick={requestPermissions} className="tg-button h-11 px-8">
               Enable Lens
             </button>
           </div>
@@ -152,7 +179,18 @@ export function CameraCapture() {
               <div className="absolute inset-x-0 h-[2px] bg-primary/30 shadow-[0_0_15px_rgba(16,185,129,1)] animate-[scan_3s_ease-in-out_infinite]" />
             </div>
 
-            <div className="absolute bottom-6 inset-x-0 flex justify-center px-6">
+            <div className="absolute bottom-6 inset-x-0 flex justify-center items-center gap-8 px-6 pointer-events-auto">
+              {/* Camera Flip Button */}
+              <button
+                type="button"
+                onClick={() => void flipCamera()}
+                className="h-10 w-10 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-black/70 active:scale-90 transition-all"
+                title="Flip camera"
+              >
+                <FlipHorizontal2 className="h-5 w-5" />
+              </button>
+
+              {/* Shutter Button */}
               <button
                 type="button"
                 onClick={() => void capture()}
@@ -163,6 +201,9 @@ export function CameraCapture() {
                   <div className="h-6 w-6 rounded-full bg-black/80" />
                 </div>
               </button>
+
+              {/* Spacer to balance the flip button */}
+              <div className="h-10 w-10" />
             </div>
           </>
         )}
@@ -185,7 +226,9 @@ export function CameraCapture() {
                   <p className="text-sm font-bold">Proof Captured</p>
                   <div className="flex items-center gap-2 text-[10px] text-white/60 font-bold uppercase tracking-wider">
                     <MapPin className="h-3 w-3" />
-                    <span>{captureState.latitude?.toFixed(4)}, {captureState.longitude?.toFixed(4)}</span>
+                    <span>
+                      {captureState.latitude?.toFixed(4)}, {captureState.longitude?.toFixed(4)}
+                    </span>
                   </div>
                 </div>
               </div>
