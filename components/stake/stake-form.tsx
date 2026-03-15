@@ -28,31 +28,44 @@ export function StakeForm() {
         throw new Error("Connect wallet first.");
       }
 
-      toast.info("Signing transaction... check your wallet.");
-      const txHash = await submitStake(values.amount, walletType);
+      const TIMEOUT_MS = 90_000;
 
-      const response = await fetch("/api/session/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress,
-          stakeAmount: values.amount,
-          stakeTxHash: txHash
-        })
-      });
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      return response.json() as Promise<{ sessionId: string }>;
+      const mutationWork = async () => {
+        toast.info("Signing transaction... approve in your wallet.");
+        const txHash = await submitStake(values.amount, walletType);
+
+        toast.info("Transaction submitted! Recording session...");
+
+        const response = await fetch("/api/session/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress,
+            stakeAmount: values.amount,
+            stakeTxHash: txHash
+          })
+        });
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        return response.json() as Promise<{ sessionId: string }>;
+      };
+
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Staking timed out. Please check your wallet and try again.")), TIMEOUT_MS)
+      );
+
+      return Promise.race([mutationWork(), timeout]);
     },
     onSuccess: (data) => {
       setActiveSessionId(data.sessionId);
-      toast.success("Stake successful! Session started.");
+      toast.success("Stake successful! Session started. 🌿");
     },
     onError: (error) => {
       toast.error(error.message);
     }
   });
+
 
   const quickStakes = [10, 50, 100];
   const isStaked = !!activeSessionId;

@@ -91,16 +91,43 @@ export async function submitStake(amount: number, wallet: SupportedWallet): Prom
   const provider = getProvider(wallet);
   const account = provider?.account;
   if (!provider || !account) {
-    throw new Error("Wallet not connected.");
+    throw new Error("Wallet not connected. Please reconnect your wallet and try again.");
   }
 
-  const contract = new Contract(STAKE_ABI, publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT, account);
-  const call = await contract.populate("stake", {
-    amount: uint256.bnToUint256(BigInt(Math.floor(amount * 1e18)))
-  });
-  const tx = await account.execute(call);
+  const amountWei = uint256.bnToUint256(BigInt(Math.floor(amount * 1e18)));
+  const contractAddress = publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT;
+
+  // Build call directly without Contract.populate to avoid any serialisation issues
+  const call = {
+    contractAddress,
+    entrypoint: "stake",
+    calldata: [amountWei.low.toString(), amountWei.high.toString()]
+  };
+
+  let tx: { transaction_hash: string };
+  try {
+    tx = await account.execute(call);
+  } catch (err: unknown) {
+    // Wallet popup was dismissed or user rejected
+    const message = err instanceof Error ? err.message : String(err);
+    if (
+      message.toLowerCase().includes("user abort") ||
+      message.toLowerCase().includes("user rejected") ||
+      message.toLowerCase().includes("cancelled") ||
+      message.toLowerCase().includes("denied")
+    ) {
+      throw new Error("Transaction was rejected. Please try again and approve in your wallet.");
+    }
+    throw new Error(`Transaction failed: ${message}`);
+  }
+
+  if (!tx?.transaction_hash) {
+    throw new Error("No transaction hash returned from wallet.");
+  }
+
   return tx.transaction_hash;
 }
+
 
 export async function mintMilestoneNft(recipient: string, milestone: number, wallet: SupportedWallet): Promise<string> {
   const provider = getProvider(wallet);
