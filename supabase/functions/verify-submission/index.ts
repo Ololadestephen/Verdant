@@ -1,19 +1,17 @@
-import OpenAI from "npm:openai@4.87.3";
 import { createClient } from "npm:@supabase/supabase-js@2.50.2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o-mini";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-1.5-flash";
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !OPENAI_API_KEY) {
-  throw new Error("Missing required environment variables.");
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
+  throw new Error("Missing required environment variables (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY).");
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const VERIFICATION_FRESHNESS_MINUTES = 1440; // 24 hours for testing
 const MILESTONE_DAYS = [7, 30, 100] as const;
@@ -60,29 +58,45 @@ function classifyVisionPayload(text: string): { grass: boolean; outdoor: boolean
 }
 
 async function analyzeImage(publicUrl: string) {
-  // Use stable Chat Completions API with vision support (more reliable than Responses API)
-  const response = await openai.chat.completions.create({
-    model: OPENAI_MODEL,
-    max_tokens: 256,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: "You are an image verifier for a touch-grass game. Analyse the photo and return ONLY a JSON object with these exact keys: grass (boolean - true if real grass/vegetation is clearly visible), outdoor (boolean - true if clearly outdoors), indoor (boolean - true if image appears to be indoors), labels (array of up to 10 descriptive string labels), confidence (number 0-1 representing how confident you are the person is genuinely outdoors touching grass)."
-          },
-          {
-            type: "image_url",
-            image_url: { url: publicUrl, detail: "low" }
-          }
-        ]
-      }
-    ]
+  // Fetch the image and convert to base64 for Gemini inline_data
+  const imgRes = await fetch(publicUrl);
+  if (!imgRes.ok) throw new Error(`Failed to fetch image: ${imgRes.status}`);
+  const imgBuffer = await imgRes.arrayBuffer();
+  const imgBase64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+  const mimeType = imgRes.headers.get("content-type") ?? "image/jpeg";
+
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const body = {
+    contents: [{
+      parts: [
+        {
+          text: "You are an image verifier for a touch-grass outdoor game. Analyse the photo and return ONLY valid JSON with exactly these keys: grass (boolean - true if real grass/vegetation is clearly visible), outdoor (boolean - true if clearly outdoors), indoor (boolean - true if indoors), labels (array of up to 10 string tags describing what you see), confidence (number 0.0-1.0 how confident the person is genuinely outdoors). No markdown, just raw JSON."
+        },
+        {
+          inline_data: { mime_type: mimeType, data: imgBase64 }
+        }
+      ]
+    }],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+  };
+
+  const res = await fetch(geminiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
   });
 
-  return classifyVisionPayload(response.choices[0]?.message?.content ?? "{}");
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+  }
+
+  const json = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+  const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  // Strip markdown code fences if present
+  const cleaned = text.replace(/^```(?:json)?\n?|\n?```$/g, "").trim();
+  return classifyVisionPayload(cleaned);
 }
 
 async function rejectSubmission(params: {
