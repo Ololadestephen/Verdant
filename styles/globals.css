@@ -67,40 +67,42 @@ h1, h2, h3, h4, h5, h6 {
   @apply font-display tracking-tight;
 }
 
-.tg-card {
-  @apply relative overflow-hidden rounded-2xl border border-white/20 bg-white/40 p-6 shadow-xl backdrop-blur-xl transition-all duration-300;
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
+@layer components {
+  .tg-card {
+    @apply relative overflow-hidden rounded-2xl border border-white/20 bg-white/40 p-6 shadow-xl backdrop-blur-xl transition-all duration-300;
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
 
-.dark .tg-card {
-  @apply border-white/5 bg-black/40;
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.2),
-    0 10px 15px -3px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
+  .dark .tg-card {
+    @apply border-white/5 bg-black/40;
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.2),
+      0 10px 15px -3px rgba(0, 0, 0, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
 
-.tg-card::before {
-  content: "";
-  @apply absolute inset-0 -z-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none;
-}
+  .tg-card::before {
+    content: "";
+    @apply absolute inset-0 -z-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none;
+  }
 
-.tg-button {
-  @apply relative inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:translate-y-[-1px] hover:shadow-xl active:translate-y-[0] disabled:cursor-not-allowed disabled:opacity-60 overflow-hidden;
-}
+  .tg-button {
+    @apply relative inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:translate-y-[-1px] hover:shadow-xl active:translate-y-[0] disabled:cursor-not-allowed disabled:opacity-60 overflow-hidden;
+  }
 
-.tg-button::after {
-  content: "";
-  @apply absolute inset-0 bg-white/10 opacity-0 transition-opacity hover:opacity-100;
-}
+  .tg-button::after {
+    content: "";
+    @apply absolute inset-0 bg-white/10 opacity-0 transition-opacity hover:opacity-100;
+  }
 
-.tg-button-ghost {
-  @apply inline-flex items-center justify-center rounded-xl border border-border bg-white/50 px-6 py-2.5 text-sm font-medium transition-all hover:bg-secondary/80 backdrop-blur-sm;
-}
+  .tg-button-ghost {
+    @apply inline-flex items-center justify-center rounded-xl border border-border bg-white/50 px-6 py-2.5 text-sm font-medium transition-all hover:bg-secondary/80 backdrop-blur-sm;
+  }
 
-.dark .tg-button-ghost {
-  @apply bg-white/5 hover:bg-white/10;
+  .dark .tg-button-ghost {
+    @apply bg-white/5 hover:bg-white/10;
+  }
 }

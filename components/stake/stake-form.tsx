@@ -7,6 +7,8 @@ import { z } from "zod";
 import { ShieldCheck, ArrowUpRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useEffect } from "react";
+
 import { useAppStore } from "@/hooks/use-app-store";
 import { useProfileSummary } from "@/hooks/use-profile-summary";
 import { submitStake } from "@/lib/starknet/wallet";
@@ -17,7 +19,7 @@ type FormInput = z.infer<typeof formSchema>;
 
 export function StakeForm() {
   const { walletAddress, walletType, activeSessionId, setActiveSessionId } = useAppStore();
-  const { data } = useProfileSummary();
+  const { data, isFetched } = useProfileSummary();
   const queryClient = useQueryClient();
 
   const form = useForm<FormInput>({
@@ -73,7 +75,15 @@ export function StakeForm() {
 
   const quickStakes = [10, 50, 100];
   const isServerStaked = Boolean(data?.activeSession?.id);
-  const isStaked = isServerStaked || !!activeSessionId;
+  const isCheckingSession = !isFetched && !!activeSessionId;
+  const isStaked = isFetched ? isServerStaked : !!activeSessionId;
+
+  // Clear local storage if the server confirms there is no active session
+  useEffect(() => {
+    if (isFetched && !isServerStaked && activeSessionId) {
+      setActiveSessionId(null);
+    }
+  }, [isFetched, isServerStaked, activeSessionId, setActiveSessionId]);
 
   return (
     <section className="tg-card relative overflow-hidden">
@@ -133,13 +143,18 @@ export function StakeForm() {
 
         <button
           type="submit"
-          disabled={startSession.isPending || isStaked}
+          disabled={startSession.isPending || isStaked || isCheckingSession}
           className="tg-button w-full h-14 group"
         >
           {startSession.isPending ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>Securing Stake...</span>
+            </div>
+          ) : isCheckingSession ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Verifying Session...</span>
             </div>
           ) : isStaked ? (
             <div className="flex items-center gap-2">
