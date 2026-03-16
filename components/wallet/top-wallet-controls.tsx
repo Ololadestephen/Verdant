@@ -1,6 +1,6 @@
 "use client";
 
-import { Chrome, Fingerprint, Wallet } from "lucide-react";
+import { Chrome } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { shortAddress } from "@/lib/utils";
 
