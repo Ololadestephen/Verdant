@@ -9,7 +9,7 @@ import { useProfileSummary } from "@/hooks/use-profile-summary";
 export default function ProfilePage() {
   const { data: summary } = useProfileSummary();
   const { data: nfts } = useProfileNfts();
-  const { data: balance, isLoading: isBalanceLoading } = useWalletBalance();
+  const { data: balance } = useWalletBalance();
 
 
   return (

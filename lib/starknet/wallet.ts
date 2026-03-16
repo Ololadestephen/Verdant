@@ -1,6 +1,6 @@
 "use client";
 
-import { Account, RpcProvider, uint256 } from "starknet";
+import { RpcProvider, uint256 } from "starknet";
 import type { AccountInterface } from "starknet";
 
 import { publicEnv } from "@/lib/public-env";
@@ -68,10 +68,10 @@ export async function connectWallet(name: SupportedWallet): Promise<{ address: s
 
 // --- Global RPC Compatibility Fix for Alchemy ---
 // Alchemy does not support block_id: "pending" for several RPC methods.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 if (typeof window !== "undefined" && !(window as any).__rpcInterceptorInstalled) {
   const originalFetch = window.fetch;
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
-    const url = typeof input === "string" ? input : input.toString();
     const isPost = init?.method === "POST";
     
     if (!isPost || !init?.body) return originalFetch(input, init);
@@ -100,12 +100,13 @@ if (typeof window !== "undefined" && !(window as any).__rpcInterceptorInstalled)
       }
       
       return response;
-    } catch (err) {
+    } catch {
       return originalFetch(input, init);
     }
   };
-  (window as any).__rpcInterceptorInstalled = true;
-  console.log("[Alchemy-Fix] Global Network Interceptor Active");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__rpcInterceptorInstalled = true;
+    console.log("[Alchemy-Fix] Global Network Interceptor Active");
 }
 
 
