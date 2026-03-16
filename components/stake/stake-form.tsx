@@ -1,13 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ShieldCheck, ArrowUpRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAppStore } from "@/hooks/use-app-store";
+import { useProfileSummary } from "@/hooks/use-profile-summary";
 import { submitStake } from "@/lib/starknet/wallet";
 
 const formSchema = z.object({ amount: z.coerce.number().positive().max(1_000_000) });
@@ -16,6 +17,8 @@ type FormInput = z.infer<typeof formSchema>;
 
 export function StakeForm() {
   const { walletAddress, walletType, activeSessionId, setActiveSessionId } = useAppStore();
+  const { data } = useProfileSummary();
+  const queryClient = useQueryClient();
 
   const form = useForm<FormInput>({
     resolver: zodResolver(formSchema),
@@ -57,8 +60,10 @@ export function StakeForm() {
 
       return Promise.race([mutationWork(), timeout]);
     },
-    onSuccess: (data) => {
-      setActiveSessionId(data.sessionId);
+    onSuccess: (responseData) => {
+      setActiveSessionId(responseData.sessionId);
+      queryClient.invalidateQueries({ queryKey: ["profile-summary", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-overview", walletAddress] });
       toast.success("Stake successful! Session started. 🌿");
     },
     onError: (error) => {
@@ -66,9 +71,9 @@ export function StakeForm() {
     }
   });
 
-
   const quickStakes = [10, 50, 100];
-  const isStaked = !!activeSessionId;
+  const isServerStaked = Boolean(data?.activeSession?.id);
+  const isStaked = isServerStaked || !!activeSessionId;
 
   return (
     <section className="tg-card relative overflow-hidden">

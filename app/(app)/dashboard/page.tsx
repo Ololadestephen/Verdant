@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { History, Activity, Zap, TrendingUp, Award } from "lucide-react";
 
 import { CameraCapture } from "@/components/capture/camera-capture";
@@ -8,20 +7,12 @@ import { RewardsCard } from "@/components/gamification/rewards-card";
 import { StreakCard } from "@/components/gamification/streak-card";
 import { StakeForm } from "@/components/stake/stake-form";
 import { SubmitCapture } from "@/components/verification/submit-capture";
-import { useAppStore } from "@/hooks/use-app-store";
 import { useDashboardOverview } from "@/hooks/use-dashboard-overview";
 import { useProfileSummary } from "@/hooks/use-profile-summary";
 
 export default function DashboardPage() {
-  const setActiveSessionId = useAppStore((state) => state.setActiveSessionId);
   const { data } = useProfileSummary();
   const { data: overview } = useDashboardOverview();
-
-  useEffect(() => {
-    if (data !== undefined) {
-      setActiveSessionId(data?.activeSession?.id ?? null);
-    }
-  }, [data, setActiveSessionId]);
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto px-4">

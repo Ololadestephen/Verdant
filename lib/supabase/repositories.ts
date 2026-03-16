@@ -5,16 +5,20 @@ import type { Database } from "@/types/supabase";
 
 export async function getOrCreateProfile(walletAddress: string): Promise<Database["public"]["Tables"]["profiles"]["Row"]> {
   const normalized = walletAddress.toLowerCase();
-  const { data: existing, error: existingError } = await supabaseAdmin
+  const { data: existingRows, error: existingError } = await supabaseAdmin
     .from("profiles")
     .select("*")
-    .eq("wallet_address", normalized)
-    .maybeSingle();
+    .ilike("wallet_address", walletAddress)
+    .limit(1);
 
   if (existingError) {
     throw existingError;
   }
-  if (existing) {
+  if (existingRows && existingRows.length > 0) {
+    const existing = existingRows[0];
+    if (existing.wallet_address !== normalized) {
+      await supabaseAdmin.from("profiles").update({ wallet_address: normalized }).eq("id", existing.id);
+    }
     return existing;
   }
 
