@@ -16,16 +16,23 @@ export const starkzap = new StarkSDK({
 });
 
 // Cache the onboarded wallet to avoid Redundant Controller Initialization errors
-// which often happen with Cartridge in the same session.
 let onboardCache: OnboardResult | null = null;
 
 export async function getOnboardedWallet() {
   if (onboardCache) return onboardCache;
   
   const { OnboardStrategy } = await import("starkzap");
+  
   onboardCache = await starkzap.onboard({ 
-    strategy: OnboardStrategy.Cartridge 
+    strategy: OnboardStrategy.Cartridge,
+    cartridge: {
+      policies: [{
+        target: publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT,
+        method: "stake"
+      }]
+    }
   });
+
   return onboardCache;
 }
 
