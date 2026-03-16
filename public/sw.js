@@ -1,5 +1,5 @@
-const CACHE_NAME = "verdant-v1";
-const ASSETS = ["/", "/dashboard", "/leaderboard", "/profile", "/icon.svg"];
+const CACHE_NAME = "verdant-v2";
+const ASSETS = ["/", "/dashboard", "/leaderboard", "/profile", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -21,16 +21,19 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/_next/")) return;
   if (url.pathname.startsWith("/api/")) return;
 
+  // Network First, falling back to cache for important routes
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-          return response;
-        })
-        .catch(() => caches.match("/"));
-    })
+    fetch(event.request)
+      .then((response) => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          return caches.match("/");
+        });
+      })
   );
 });

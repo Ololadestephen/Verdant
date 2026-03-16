@@ -9,7 +9,7 @@ export function RegisterServiceWorker() {
     }
 
     if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js");
+      void navigator.serviceWorker.register("/sw.js?v=2");
     }
   }, []);
 
