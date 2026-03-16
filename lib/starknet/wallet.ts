@@ -8,7 +8,7 @@ import { publicEnv } from "@/lib/public-env";
 export type SupportedWallet = "argentX" | "braavos" | "cartridge";
 
 type WalletProvider = {
-  enable: (options?: { starknetVersion?: string }) => Promise<string[]>;
+  enable: (options?: unknown) => Promise<string[]>;
   isConnected: boolean;
   selectedAddress?: string;
   selectedAccount?: string;
@@ -57,8 +57,8 @@ export async function connectWallet(name: SupportedWallet): Promise<{ address: s
   if (!provider) {
     throw new Error(`${name} wallet extension is unavailable.`);
   }
-  // Pass starknetVersion to ensure Braavos uses the correct network/RPC
-  const enableResult = await provider.enable({ starknetVersion: "v5" });
+  // Remove starknetVersion argument which causes errors with Braavos
+  const enableResult = await provider.enable();
   const address = resolveAddress(provider, enableResult);
   if (!address) {
     throw new Error(`Unable to read ${name} wallet address.`);

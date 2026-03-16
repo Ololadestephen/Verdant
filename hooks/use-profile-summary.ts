@@ -30,6 +30,8 @@ export function useProfileSummary() {
         throw new Error("Failed to load profile summary.");
       }
       return response.json() as Promise<SummaryResponse>;
-    }
+    },
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 }

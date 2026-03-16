@@ -49,6 +49,8 @@ export function useDashboardOverview() {
         throw new Error("Failed to load dashboard overview.");
       }
       return response.json() as Promise<DashboardOverview>;
-    }
+    },
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 }
