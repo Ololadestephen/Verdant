@@ -18,8 +18,10 @@ export default function DashboardPage() {
   const { data: overview } = useDashboardOverview();
 
   useEffect(() => {
-    setActiveSessionId(data?.activeSession?.id ?? null);
-  }, [data?.activeSession?.id, setActiveSessionId]);
+    if (data !== undefined) {
+      setActiveSessionId(data?.activeSession?.id ?? null);
+    }
+  }, [data, setActiveSessionId]);
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto px-4">

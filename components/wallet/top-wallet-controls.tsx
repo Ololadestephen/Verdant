@@ -32,38 +32,38 @@ export function TopWalletControls() {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="hidden sm:flex items-center gap-2">
+      <button 
+        type="button" 
+        onClick={() => void connect("cartridge")} 
+        disabled={isConnecting} 
+        className="tg-button bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-2 shadow-sm"
+      >
+        <Chrome className="h-3.5 w-3.5" />
+        Connect via Social
+      </button>
+
+      <div className="h-8 w-px bg-border/50 mx-1" />
+
+      <div className="hidden sm:flex items-center gap-1">
         <button
           type="button"
           onClick={() => void connect("argentX")}
           disabled={isConnecting}
-          className="tg-button-ghost px-3 py-2 text-xs rounded-xl flex items-center gap-2 hover:bg-orange-500/10 hover:text-orange-600 transition-colors"
+          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white border border-border hover:border-orange-200 transition-colors"
+          title="Argent X"
         >
-          <Fingerprint className="h-3.5 w-3.5 text-orange-500" />
-          Argent X
+          <Fingerprint className="h-4 w-4 text-orange-400" />
         </button>
         <button
           type="button"
           onClick={() => void connect("braavos")}
           disabled={isConnecting}
-          className="tg-button-ghost px-3 py-2 text-xs rounded-xl flex items-center gap-2 hover:bg-blue-500/10 hover:text-blue-600 transition-colors"
+          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white border border-border hover:border-blue-200 transition-colors"
+          title="Braavos"
         >
-          <Wallet className="h-3.5 w-3.5 text-blue-500" />
-          Braavos
+          <Wallet className="h-4 w-4 text-blue-400" />
         </button>
       </div>
-
-      <div className="hidden sm:block h-6 w-px bg-border/50 mx-1" />
-
-      <button 
-        type="button" 
-        onClick={() => void connect("cartridge")} 
-        disabled={isConnecting} 
-        className="tg-button bg-stone-950 hover:bg-black text-white px-4 py-2 text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-black/5"
-      >
-        <Chrome className="h-3.5 w-3.5" />
-        Connect with Social
-      </button>
     </div>
   );
 }
