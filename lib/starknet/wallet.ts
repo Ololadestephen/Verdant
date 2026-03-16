@@ -135,9 +135,9 @@ export async function submitStake(amount: number, wallet: SupportedWallet): Prom
   const contractAddress = publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT;
 
   if (wallet === "cartridge") {
-    const result = await starkzap.onboard({ 
-      strategy: OnboardStrategy.Cartridge 
-    });
+    const { getOnboardedWallet } = await import("@/lib/starknet/starkzap");
+    const result = await getOnboardedWallet();
+    
     // Defensive patch for Cartridge/SDK internal provider
     patchProvider(result.wallet.getProvider());
 

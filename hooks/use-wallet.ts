@@ -13,9 +13,8 @@ export function useWallet() {
     setError(null);
     try {
       if (provider === "cartridge") {
-        const { starkzap } = await import("@/lib/starknet/starkzap");
-        const { OnboardStrategy } = await import("starkzap");
-        const result = await starkzap.onboard({ strategy: OnboardStrategy.Cartridge });
+        const { getOnboardedWallet } = await import("@/lib/starknet/starkzap");
+        const result = await getOnboardedWallet();
         const address = result.wallet.address.toLowerCase();
         setWallet(address, "cartridge");
         return address;
@@ -44,7 +43,9 @@ export function useWallet() {
     }
   }, [walletType, walletAddress, connect, isConnecting]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    const { clearOnboardCache } = await import("@/lib/starknet/starkzap");
+    clearOnboardCache();
     clearWallet();
   }, [clearWallet]);
 
