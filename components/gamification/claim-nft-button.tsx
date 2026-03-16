@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useAppStore } from "@/hooks/use-app-store";
-import { mintMilestoneNft } from "@/lib/starknet/wallet";
+
 
 export function ClaimNftButton({ milestoneDay }: { milestoneDay: 7 | 30 | 100 }) {
   const queryClient = useQueryClient();
@@ -11,19 +11,14 @@ export function ClaimNftButton({ milestoneDay }: { milestoneDay: 7 | 30 | 100 })
 
   const claim = useMutation({
     mutationFn: async () => {
-      if (!walletAddress || !walletType) throw new Error("Connect wallet to mint milestone NFT.");
-
-      const mintTxHash = await mintMilestoneNft(walletAddress, milestoneDay, walletType);
-      const tokenId = mintTxHash;
+      if (!walletAddress || !walletType) throw new Error("Connect wallet to claim milestone NFT.");
 
       const response = await fetch("/api/profile/nfts/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           walletAddress,
-          milestoneDay,
-          mintTxHash,
-          tokenId
+          milestoneDay
         })
       });
 
@@ -32,6 +27,7 @@ export function ClaimNftButton({ milestoneDay }: { milestoneDay: 7 | 30 | 100 })
       }
       return response.json();
     },
+
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["profile-nfts", walletAddress] });
     }

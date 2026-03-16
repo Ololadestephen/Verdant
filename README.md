@@ -6,23 +6,26 @@ Verdant is a Decentralized Physical Infrastructure Network (DePIN) game on Stark
 
 ## 🚀 Quick Start
 
-1. **Setup Env**: `cp .env.example .env.local`
+1. **Setup Env**: `cp .env.example .env.local` (ensure `GEMINI_API_KEY` and `STARKNET_ADMIN_*` are set)
 2. **Install**: `npm install`
 3. **Run**: `npm run dev`
 
 ## 🛠 Tech Stack
 
 - **Frontend**: Next.js 14 (App Router) + Tailwind CSS
-- **Blockchain**: Starknet (Starknet.js + Argent/Braavos)
+- **Blockchain**: Starknet (Starkzap SDK + Social Login + Extensions)
 - **Backend**: Supabase (Database, Auth, Storage, Edge Functions)
-- **AI**: OpenAI Vision API for proof-of-outdoor verification
+- **AI**: Google Gemini 1.5 Flash for real-time proof-of-outdoor verification
+- **Gasless**: Starkzap Paymaster for sponsored transactions
 
 ## 🏗 Key Features
 
-- **DeFi Staking**: Stake STRK to initiate an outdoor verification session.
-- **AI Verification**: Real-time image validation via Supabase Edge Functions.
-- **Gamification**: Streaks, rewards, and milestone NFTs.
-- **Dashboard**: Command center for managing sessions and monitoring performance.
+- **Social Onboarding**: Connect via Email, Google, or Twitter using Starkzap Social Login—no extension required!
+- **Gasless Staking**: Sponsored transactions for social users (powered by Starkzap Paymaster).
+- **AI Verification**: Real-time image validation via Gemini-powered Supabase Edge Functions.
+- **Backend NFT Relayer**: Secure server-side minting for milestone NFTs.
+- **Alchemy RPC Fix**: Built-in network interceptor for seamless Alchemy RPC compatibility.
+- **Anti-Cheating**: Verified daily submission limits (3 per day) to prevent spam.
 
 ## 📦 Database & Migrations
 
@@ -32,3 +35,4 @@ Deploy database changes and edge functions:
 supabase db push
 supabase functions deploy verify-submission
 ```
+

@@ -14,7 +14,9 @@ type SummaryResponse = {
     started_at: string;
     expires_at: string;
   } | null;
+  dailySubmissionCount: number;
 };
+
 
 export function useProfileSummary() {
   const walletAddress = useAppStore((state) => state.walletAddress);

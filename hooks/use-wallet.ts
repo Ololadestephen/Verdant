@@ -12,6 +12,15 @@ export function useWallet() {
     setIsConnecting(true);
     setError(null);
     try {
+      if (provider === "cartridge") {
+        const { starkzap } = await import("@/lib/starknet/starkzap");
+        const { OnboardStrategy } = await import("starkzap");
+        const result = await starkzap.onboard({ strategy: OnboardStrategy.Cartridge });
+        const address = result.wallet.address.toLowerCase();
+        setWallet(address, "cartridge");
+        return address;
+      }
+
       const result = await connectWallet(provider);
       setWallet(result.address, result.wallet);
       return result.address;
@@ -23,6 +32,7 @@ export function useWallet() {
       setIsConnecting(false);
     }
   }, [setWallet]);
+
 
   // Auto-reconnect on mount if we have persisted credentials
   useEffect(() => {

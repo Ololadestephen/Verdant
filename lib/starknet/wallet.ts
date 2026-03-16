@@ -5,7 +5,7 @@ import type { AccountInterface } from "starknet";
 
 import { publicEnv } from "@/lib/public-env";
 
-export type SupportedWallet = "argentX" | "braavos";
+export type SupportedWallet = "argentX" | "braavos" | "cartridge";
 
 type WalletProvider = {
   enable: (options?: { starknetVersion?: string }) => Promise<string[]>;
@@ -66,81 +66,113 @@ export async function connectWallet(name: SupportedWallet): Promise<{ address: s
   return { address: address.toLowerCase(), wallet: name };
 }
 
+// --- Global RPC Compatibility Fix for Alchemy ---
+// Alchemy does not support block_id: "pending" for several RPC methods.
+if (typeof window !== "undefined" && !(window as any).__rpcInterceptorInstalled) {
+  const originalFetch = window.fetch;
+  window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
+    const url = typeof input === "string" ? input : input.toString();
+    const isPost = init?.method === "POST";
+    
+    if (!isPost || !init?.body) return originalFetch(input, init);
+
+    // Filter for JSON-RPC requests
+    const bodyStr = typeof init.body === "string" ? init.body : "";
+    if (!bodyStr.includes("jsonrpc")) return originalFetch(input, init);
+
+    try {
+      const response = await originalFetch(input, init);
+      if (!response.ok) return response;
+      
+      const clonedResponse = response.clone();
+      const result = await clonedResponse.json().catch(() => null);
+      
+      if (result?.error) {
+        const message = (result.error.message || "").toLowerCase();
+        const code = result.error.code;
+        const isAlchemyError = message.includes("invalid block id") || message.includes("invalid params") || code === -32602 || code === -32600;
+        
+        if (isAlchemyError && bodyStr.includes('"pending"')) {
+          console.warn(`[Alchemy-Fix] Caught ${result.error.message}. Retrying with "latest"...`);
+          const newBody = bodyStr.replace(/"pending"/g, '"latest"');
+          return originalFetch(input, { ...init, body: newBody });
+        }
+      }
+      
+      return response;
+    } catch (err) {
+      return originalFetch(input, init);
+    }
+  };
+  (window as any).__rpcInterceptorInstalled = true;
+  console.log("[Alchemy-Fix] Global Network Interceptor Active");
+}
+
+
+/** 
+ * No-op helper for backwards compatibility in other modules. 
+ * The fetch interceptor handles everything now.
+ */
+export function patchProvider<T>(provider: T): T {
+  return provider;
+}
+
 export function getReadProvider(): RpcProvider {
   return new RpcProvider({ nodeUrl: publicEnv.NEXT_PUBLIC_STARKNET_RPC_URL });
 }
 
+
+
+
+
+
 export async function submitStake(amount: number, wallet: SupportedWallet): Promise<string> {
-  const walletProvider = getProvider(wallet);
-  if (!walletProvider) {
-    throw new Error("Wallet not connected. Please reconnect your wallet and try again.");
-  }
-
-  // Re-enable to ensure we have a fresh account reference
-  await walletProvider.enable({ starknetVersion: "v5" }).catch(() => null);
-
-  const walletAccount = walletProvider.account;
-  const address = walletProvider.selectedAddress ?? walletProvider.account?.address;
-
-  if (!walletAccount || !address) {
-    throw new Error("Wallet not connected. Please reconnect your wallet and try again.");
-  }
+  const { starkzap } = await import("@/lib/starknet/starkzap");
+  const { OnboardStrategy } = await import("starkzap");
 
   const amountWei = uint256.bnToUint256(BigInt(Math.floor(amount * 1e18)));
   const contractAddress = publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT;
 
-  // Build call with proper calldata encoding for u256
-  const call = {
-    contractAddress,
-    entrypoint: "stake",
-    calldata: [amountWei.low.toString(), amountWei.high.toString()]
-  };
+  if (wallet === "cartridge") {
+    const result = await starkzap.onboard({ 
+      strategy: OnboardStrategy.Cartridge 
+    });
+    // Defensive patch for Cartridge/SDK internal provider
+    patchProvider(result.wallet.getProvider());
 
-  let tx: { transaction_hash: string };
-  try {
-    // Pass explicit maxFee so Braavos skips internal fee estimation.
-    // Braavos shows "Missing RPC node for sepolia-alpha" when it tries to estimate fees internally.
-    // 0.001 STRK (1e15 wei) is a safe upper bound for Sepolia staking transactions.
-    const maxFee = BigInt("1000000000000000"); // 0.001 STRK in wei
-    tx = await walletAccount.execute(call, undefined, { maxFee });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    if (
-      message.toLowerCase().includes("user abort") ||
-      message.toLowerCase().includes("user rejected") ||
-      message.toLowerCase().includes("cancelled") ||
-      message.toLowerCase().includes("denied")
-    ) {
-      throw new Error("Transaction was rejected. Please try again and approve in your wallet.");
+    const tx = await result.wallet.execute([
+      {
+        contractAddress,
+        entrypoint: "stake",
+        calldata: [amountWei.low.toString(), amountWei.high.toString()],
+      },
+    ], { feeMode: "sponsored" });
+
+    return tx.hash;
+  } else {
+    // For extension wallets, we use their native account implementation directly
+    const walletProvider = getProvider(wallet);
+    if (!walletProvider || !walletProvider.account) {
+      throw new Error(`Wallet ${wallet} not connected.`);
     }
-    throw new Error(`Transaction failed: ${message}`);
-  }
 
-  if (!tx?.transaction_hash) {
-    throw new Error("No transaction hash returned from wallet.");
+    const { transaction_hash } = await walletProvider.account.execute([
+      {
+        contractAddress,
+        entrypoint: "stake",
+        calldata: [amountWei.low.toString(), amountWei.high.toString()],
+      },
+    ]);
+    return transaction_hash;
   }
-
-  return tx.transaction_hash;
 }
 
-export async function mintMilestoneNft(recipient: string, milestone: number, wallet: SupportedWallet): Promise<string> {
-  const walletProvider = getProvider(wallet);
-  const account = walletProvider?.account;
-  if (!walletProvider || !account) {
-    throw new Error("Wallet not connected.");
-  }
 
-  const rpcProvider = getReadProvider();
-  const address = walletProvider.selectedAddress ?? account.address;
-  if (!address) throw new Error("Wallet address unavailable.");
 
-  const connectedAccount = new Account(rpcProvider, address, account as unknown as string);
-  const calldata = [recipient, milestone.toString(), "0"];
-  const tx = await connectedAccount.execute({
-    contractAddress: publicEnv.NEXT_PUBLIC_STARKNET_NFT_CONTRACT,
-    entrypoint: "mint_milestone",
-    calldata
-  });
-  return tx.transaction_hash;
-}
+
+
+
+
+
+
 

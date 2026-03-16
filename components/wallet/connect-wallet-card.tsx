@@ -23,14 +23,22 @@ export function ConnectWalletCard() {
           </button>
         </div>
       ) : (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => void connect("cartridge")}
+            disabled={isConnecting}
+            className="tg-button bg-gradient-to-r from-primary to-emerald-600 sm:col-span-2"
+          >
+            Connect via Social
+          </button>
           <button
             type="button"
             onClick={() => void connect("argentX")}
             disabled={isConnecting}
-            className="tg-button"
+            className="tg-button-ghost"
           >
-            Connect Argent X
+            Argent X
           </button>
           <button
             type="button"
@@ -38,9 +46,10 @@ export function ConnectWalletCard() {
             disabled={isConnecting}
             className="tg-button-ghost disabled:opacity-60"
           >
-            Connect Braavos
+            Braavos
           </button>
         </div>
+
       )}
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </section>

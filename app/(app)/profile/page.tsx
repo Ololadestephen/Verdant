@@ -2,12 +2,15 @@
 
 import { NftMilestones } from "@/components/gamification/nft-milestones";
 import { ClaimNftButton } from "@/components/gamification/claim-nft-button";
+import { useWalletBalance } from "@/hooks/use-wallet-balance";
 import { useProfileNfts } from "@/hooks/use-profile-nfts";
 import { useProfileSummary } from "@/hooks/use-profile-summary";
 
 export default function ProfilePage() {
-  const { data } = useProfileSummary();
+  const { data: summary } = useProfileSummary();
   const { data: nfts } = useProfileNfts();
+  const { data: balance, isLoading: isBalanceLoading } = useWalletBalance();
+
 
   return (
     <div className="space-y-4">
@@ -17,10 +20,16 @@ export default function ProfilePage() {
       </section>
       <section className="tg-card">
         <h2 className="text-xl font-semibold">Stats</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Wallet: {data?.profile.wallet_address ?? "Connect wallet"}</p>
-        <p className="mt-1 text-sm text-muted-foreground">Total earned: {Number(data?.profile.total_earned ?? 0).toFixed(2)} STRK</p>
-        <p className="mt-1 text-sm text-muted-foreground">Verified submissions: {data?.profile.total_verified_submissions ?? 0}</p>
+        <p className="mt-2 text-sm text-muted-foreground">Wallet: {summary?.profile.wallet_address ?? "Connect wallet"}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Total earned: {Number(summary?.profile.total_earned ?? 0).toFixed(2)} STRK</p>
+        <p className="mt-1 text-sm text-muted-foreground">Verified submissions: {summary?.profile.total_verified_submissions ?? 0}</p>
+        {balance && (
+          <p className="mt-1 text-sm text-primary font-bold">
+            Live Balance: {balance.formatted}
+          </p>
+        )}
       </section>
+
       <NftMilestones minted={(nfts ?? []).filter((nft) => nft.status === "minted" || nft.status === "pending").map((nft) => nft.milestone_day)} />
       <section className="tg-card">
         <h2 className="text-lg font-semibold">NFT Mint Activity</h2>

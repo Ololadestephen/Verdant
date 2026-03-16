@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.50.2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-1.5-flash";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
   throw new Error("Missing required environment variables (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY).");
@@ -62,8 +62,20 @@ async function analyzeImage(publicUrl: string) {
   const imgRes = await fetch(publicUrl);
   if (!imgRes.ok) throw new Error(`Failed to fetch image: ${imgRes.status}`);
   const imgBuffer = await imgRes.arrayBuffer();
-  const imgBase64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+  const uint8 = new Uint8Array(imgBuffer);
+
+  let binary = "";
+  const chunkSize = 16384;
+  for (let i = 0; i < uint8.length; i += chunkSize) {
+    const chunk = uint8.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...Array.from(chunk));
+  }
+  const imgBase64 = btoa(binary);
+
+
+
   const mimeType = imgRes.headers.get("content-type") ?? "image/jpeg";
+
 
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -78,7 +90,7 @@ async function analyzeImage(publicUrl: string) {
         }
       ]
     }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+    generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
   };
 
   const res = await fetch(geminiUrl, {
@@ -92,11 +104,15 @@ async function analyzeImage(publicUrl: string) {
     throw new Error(`Gemini API error ${res.status}: ${errText}`);
   }
 
-  const json = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  const json = await res.json() as any;
+  console.log("Full Gemini JSON:", JSON.stringify(json));
+  
+  const text = json.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "{}";
   // Strip markdown code fences if present
   const cleaned = text.replace(/^```(?:json)?\n?|\n?```$/g, "").trim();
-  return classifyVisionPayload(cleaned);
+  console.log("Gemini cleaned response:", cleaned);
+  return { vision: classifyVisionPayload(cleaned), rawText: text };
+
 }
 
 async function rejectSubmission(params: {
@@ -178,16 +194,20 @@ Deno.serve(async (request) => {
     }
 
 
+    console.log(`Creating signed URL for path: ${submission.image_path}`);
     const { data: signed, error: signedError } = await supabase.storage
       .from("grass-photos")
       .createSignedUrl(submission.image_path, 60);
 
     if (signedError || !signed?.signedUrl) {
+      console.error("Storage Error:", signedError);
       await rejectSubmission({ submissionId: submission.id, sessionId: submission.session_id, reason: "Unable to fetch uploaded image." });
       return new Response(JSON.stringify({ status: "rejected", reason: "image_fetch_failed" }), { status: 200 });
     }
+    console.log("Signed URL created successfully");
 
-    const vision = await analyzeImage(signed.signedUrl);
+
+    const { vision } = await analyzeImage(signed.signedUrl);
 
     if (!vision.grass || !vision.outdoor || vision.indoor || vision.confidence < 0.6) {
       await rejectSubmission({
@@ -197,8 +217,10 @@ Deno.serve(async (request) => {
         labels: vision.labels,
         confidence: vision.confidence
       });
-      return new Response(JSON.stringify({ status: "rejected", reason: "vision_failed" }), { status: 200 });
+      return new Response(JSON.stringify({ status: "rejected", reason: "vision_failed", vision }), { status: 200 });
     }
+
+
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")

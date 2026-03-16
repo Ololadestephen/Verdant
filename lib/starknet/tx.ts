@@ -1,9 +1,8 @@
-import { RpcProvider } from "starknet";
-
-import { publicEnv } from "@/lib/public-env";
+import { getReadProvider } from "./wallet";
 
 export async function waitForTransaction(txHash: string, timeoutMs = 120_000): Promise<void> {
-  const provider = new RpcProvider({ nodeUrl: publicEnv.NEXT_PUBLIC_STARKNET_RPC_URL });
+  const provider = getReadProvider();
+
   const start = Date.now();
 
   while (Date.now() - start < timeoutMs) {

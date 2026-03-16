@@ -39,6 +39,20 @@ export async function POST(request: Request) {
 
     const profile = await getOrCreateProfile(walletAddress);
 
+    // Anti-Cheating: Max 3 submissions per day
+    const today = new Date().toISOString().slice(0, 10);
+    const { count, error: countError } = await supabaseAdmin
+      .from("submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("profile_id", profile.id)
+      .gte("submitted_at", `${today}T00:00:00Z`);
+
+    if (countError) throw countError;
+    if (count !== null && count >= 3) {
+      return NextResponse.json({ error: "Daily submission limit (3) reached. Please touch grass again tomorrow!" }, { status: 429 });
+    }
+
+
     const submission = await createSubmission({
       profileId: profile.id,
       sessionId,

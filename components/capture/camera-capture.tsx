@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Camera, RefreshCw, MapPin, CheckCircle2, AlertCircle, Maximize2, FlipHorizontal2 } from "lucide-react";
 
 import { useAppStore } from "@/hooks/use-app-store";
+import { useProfileSummary } from "@/hooks/use-profile-summary";
+
 
 async function blobToFile(blob: Blob, fileName: string): Promise<File> {
   return new File([blob], fileName, { type: "image/jpeg" });
@@ -22,6 +24,10 @@ export function CameraCapture() {
   const [facingMode, setFacingMode] = useState<FacingMode>("environment");
 
   const { setCapture, clearCapture, capture: captureState } = useAppStore();
+  const { data: summary } = useProfileSummary();
+  const attemptsRemaining = 3 - (summary?.dailySubmissionCount ?? 0);
+  const isLimitReached = attemptsRemaining <= 0;
+
 
   // Callback ref: fires exactly when the video element mounts/unmounts
   const videoRefCallback = (node: HTMLVideoElement | null) => {
@@ -152,6 +158,17 @@ export function CameraCapture() {
         </div>
       </div>
 
+      {/* Daily Limit Badge */}
+      <div className="flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/50 w-fit">
+        <div className={`h-1.5 w-1.5 rounded-full ${isLimitReached ? "bg-red-500" : "bg-primary"}`} />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {isLimitReached 
+            ? "Daily limit reached" 
+            : `${attemptsRemaining} attempts left today`}
+        </span>
+      </div>
+
+
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black/90 border border-border/50 shadow-2xl group/camera">
         {!stream && !previewUrl && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
@@ -202,9 +219,10 @@ export function CameraCapture() {
               <button
                 type="button"
                 onClick={() => void capture()}
-                disabled={isCapturing}
+                disabled={isCapturing || isLimitReached}
                 className="h-14 w-14 rounded-full bg-white border-4 border-primary/20 flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50"
               >
+
                 <div className="h-10 w-10 rounded-full border-2 border-black/10 flex items-center justify-center">
                   <div className="h-6 w-6 rounded-full bg-black/80" />
                 </div>
