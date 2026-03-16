@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Footprints, Wallet } from "lucide-react";
+import { ArrowRight, Sparkles, Footprints, Wallet, Chrome, Mail, Twitter } from "lucide-react";
 
 export default function MarketingPage() {
   return (
@@ -22,14 +22,30 @@ export default function MarketingPage() {
               prove you&apos;ve &quot;touched grass&quot;, and earn yield on your daily runs.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link href="/dashboard" className="tg-button group gap-2 h-12 px-8">
-                Start Playing
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link href="/leaderboard" className="tg-button-ghost h-12 px-8">
-                View Leaderboard
-              </Link>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <Link href="/dashboard" className="tg-button bg-stone-950 hover:bg-black text-white group gap-2 h-14 px-10 rounded-2xl shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                  Connect via Social
+                  <div className="flex -space-x-1 ml-2">
+                    <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center p-1 border border-border shadow-sm">
+                      <Chrome className="h-3 w-3 text-red-500" />
+                    </div>
+                    <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center p-1 border border-border shadow-sm">
+                      <Mail className="h-3 w-3 text-primary" />
+                    </div>
+                    <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center p-1 border border-border shadow-sm">
+                      <Twitter className="h-3 w-3 text-blue-400" />
+                    </div>
+                  </div>
+                </Link>
+                <Link href="/leaderboard" className="tg-button-ghost h-14 px-8 rounded-2xl bg-white/50 backdrop-blur-sm border-border/50">
+                  View Leaderboard
+                </Link>
+              </div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                Gasless social onboarding powered by Starkzap
+              </p>
             </div>
           </div>
         </section>
