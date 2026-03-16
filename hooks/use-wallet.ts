@@ -36,12 +36,16 @@ export function useWallet() {
 
   // Auto-reconnect on mount if we have persisted credentials
   useEffect(() => {
-    if (walletType && !isConnecting && !walletAddress) {
+    // Always re-hydrate in-memory controller on mount if a wallet type is stored
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof window !== "undefined" && walletType && !(window as any).__walletHydrated) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__walletHydrated = true;
       connect(walletType).catch(() => {
         // Silently fail if extension is locked/unavailable
       });
     }
-  }, [walletType, walletAddress, connect, isConnecting]);
+  }, [walletType, connect]);
 
   const disconnect = useCallback(async () => {
     const { clearOnboardCache } = await import("@/lib/starknet/starkzap");

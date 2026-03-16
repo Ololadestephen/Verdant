@@ -32,38 +32,36 @@ export function TopWalletControls() {
 
   return (
     <div className="flex items-center gap-2">
-      <button 
-        type="button" 
-        onClick={() => void connect("cartridge")} 
-        disabled={isConnecting} 
-        className="tg-button bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-2 shadow-sm"
-      >
-        <Chrome className="h-3.5 w-3.5" />
-        Connect via Social
-      </button>
-
-      <div className="h-8 w-px bg-border/50 mx-1" />
-
-      <div className="hidden sm:flex items-center gap-1">
+      <div className="hidden sm:flex items-center gap-2">
         <button
           type="button"
           onClick={() => void connect("argentX")}
           disabled={isConnecting}
-          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white border border-border hover:border-orange-200 transition-colors"
-          title="Argent X"
+          className="tg-button px-4 py-2 text-xs rounded-xl flex items-center transition-colors"
         >
-          <Fingerprint className="h-4 w-4 text-orange-400" />
+          ArgentX
         </button>
         <button
           type="button"
           onClick={() => void connect("braavos")}
           disabled={isConnecting}
-          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white border border-border hover:border-blue-200 transition-colors"
-          title="Braavos"
+          className="tg-button-ghost bg-white px-4 py-2 text-xs rounded-xl flex items-center transition-colors border border-border hover:bg-muted"
         >
-          <Wallet className="h-4 w-4 text-blue-400" />
+          Braavos
         </button>
       </div>
+
+      <div className="hidden sm:block h-6 w-px bg-border/50 mx-1" />
+
+      <button 
+        type="button" 
+        onClick={() => void connect("cartridge")} 
+        disabled={isConnecting} 
+        className="tg-button-ghost bg-stone-950 hover:bg-black text-white px-4 py-2 text-xs rounded-xl flex items-center gap-2 shadow-sm border-none"
+      >
+        <Chrome className="h-3.5 w-3.5" />
+        Connect via Social
+      </button>
     </div>
   );
 }
