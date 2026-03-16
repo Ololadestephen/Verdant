@@ -128,9 +128,6 @@ export function getReadProvider(): RpcProvider {
 
 
 export async function submitStake(amount: number, wallet: SupportedWallet): Promise<string> {
-  const { starkzap } = await import("@/lib/starknet/starkzap");
-  const { OnboardStrategy } = await import("starkzap");
-
   const amountWei = uint256.bnToUint256(BigInt(Math.floor(amount * 1e18)));
   const contractAddress = publicEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT;
 
