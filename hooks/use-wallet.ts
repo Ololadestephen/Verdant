@@ -25,6 +25,7 @@ export function useWallet() {
       setWallet(result.address, result.wallet);
       return result.address;
     } catch (err) {
+      console.error("[useWallet] Connection Error:", err);
       const message = err instanceof Error ? err.message : "Failed to connect wallet.";
       setError(message);
       throw err;
