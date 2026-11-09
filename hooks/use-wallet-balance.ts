@@ -1,26 +1,36 @@
 import { useQuery } from "@tanstack/react-query";
+import { formatEther } from "viem";
 import { useAppStore } from "@/hooks/use-app-store";
+import { getPublicClient } from "@/lib/evm/wallet";
 
 export function useWalletBalance() {
-  const { walletAddress, walletType } = useAppStore();
+  const { walletAddress } = useAppStore();
 
   return useQuery({
-    queryKey: ["wallet-balance", walletAddress, walletType],
-    enabled: Boolean(walletAddress && walletType === "cartridge"),
+    queryKey: ["wallet-balance", walletAddress],
+    enabled: Boolean(walletAddress && walletAddress.startsWith("0x")),
     queryFn: async () => {
-      const { starkzap } = await import("@/lib/starknet/starkzap");
-      const { OnboardStrategy, sepoliaTokens } = await import("starkzap");
-      
-      const result = await starkzap.onboard({ strategy: OnboardStrategy.Cartridge });
-      const balance = await result.wallet.balanceOf(sepoliaTokens.STRK);
-      
-      return {
-        formatted: balance.toFormatted(),
-        value: balance.toBase().toString(),
-        symbol: "STRK"
-      };
+      if (!walletAddress || !walletAddress.startsWith("0x")) return null;
 
+      try {
+        const publicClient = getPublicClient();
+        const balanceWei = await publicClient.getBalance({
+          address: walletAddress as `0x${string}`
+        });
+
+        const formattedEther = formatEther(balanceWei);
+        const num = parseFloat(formattedEther);
+
+        return {
+          formatted: `${num.toFixed(4)} BOT`,
+          value: balanceWei.toString(),
+          symbol: "BOT"
+        };
+      } catch (err) {
+        console.warn("Failed to query BOT balance:", err);
+        return null;
+      }
     },
-    refetchInterval: 30000, // Every 30 seconds
+    refetchInterval: 15000 // Every 15 seconds
   });
 }

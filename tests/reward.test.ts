@@ -13,8 +13,9 @@ describe("reward calculations", () => {
   });
 
   it("resolves first unminted milestone", () => {
-    expect(resolveMilestone(7, [])).toBe(7);
-    expect(resolveMilestone(40, [7])).toBe(30);
-    expect(resolveMilestone(120, [7, 30, 100])).toBeUndefined();
+    expect(resolveMilestone(7, [1])).toBe(7);
+    expect(resolveMilestone(1, [])).toBe(1);
+    expect(resolveMilestone(40, [1, 7])).toBe(30);
+    expect(resolveMilestone(120, [1, 7, 30, 100])).toBeUndefined();
   });
 });

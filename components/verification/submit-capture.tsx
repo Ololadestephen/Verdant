@@ -84,7 +84,7 @@ export function SubmitCapture() {
           <div className={`p-4 rounded-2xl border transition-colors ${isReady ? 'bg-primary/5 border-primary/20' : 'bg-secondary/20 border-border/50'}`}>
             <p className="text-xs font-medium leading-relaxed">
               {isReady
-                ? "Your proof-of-outdoor is ready for submission. Transmitting will consume 0.0012 STRK in gas."
+                ? "Your proof-of-outdoor is ready for submission. Transmitting to the AI validation engine for outdoor verification."
                 : "Active session and proof capture required to enable submission."}
             </p>
           </div>

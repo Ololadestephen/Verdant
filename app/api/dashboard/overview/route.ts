@@ -25,20 +25,20 @@ export async function GET(request: Request) {
       ...sessions.map((session) => ({
         type: "session",
         at: session.started_at,
-        message: `Session ${session.status} with ${Number(session.stake_amount).toFixed(2)} STRK stake`
+        message: `Outdoor check-in session ${session.status}`
       })),
       ...submissions.map((submission) => ({
         type: "submission",
         at: submission.submitted_at,
         message:
           submission.verification_status === "approved"
-            ? `Submission approved (+${Number(submission.reward_amount).toFixed(2)} STRK)`
+            ? `Submission approved (+${Math.floor(Number(submission.reward_amount) * 10)} PTS)`
             : `Submission ${submission.verification_status}`
       })),
       ...nfts.map((nft) => ({
         type: "nft",
         at: nft.created_at,
-        message: `Milestone ${nft.milestone_day}d NFT ${nft.status}`
+        message: `Milestone ${nft.milestone_day}d Badge ${nft.status}`
       }))
     ]
       .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())

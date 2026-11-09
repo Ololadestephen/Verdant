@@ -1,31 +1,26 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+"use client";
 
-import { connectWallet, type SupportedWallet } from "@/lib/starknet/wallet";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { connectEVMWallet } from "@/lib/evm/wallet";
 import { useAppStore } from "@/hooks/use-app-store";
 
+export type SupportedWallet = "evm" | "metamask" | "rabby";
+
 export function useWallet() {
-  const { walletAddress, walletType, setWallet, clearWallet } = useAppStore();
+  const { walletAddress, walletType, authToken, setWallet, clearWallet } = useAppStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const connect = useCallback(async (provider: SupportedWallet) => {
+  const connect = useCallback(async (_providerType: string = "evm") => {
     setIsConnecting(true);
     setError(null);
     try {
-      if (provider === "cartridge") {
-        const { getOnboardedWallet } = await import("@/lib/starknet/starkzap");
-        const result = await getOnboardedWallet();
-        const address = result.wallet.address.toLowerCase();
-        setWallet(address, "cartridge");
-        return address;
-      }
-
-      const result = await connectWallet(provider);
-      setWallet(result.address, result.wallet);
+      const result = await connectEVMWallet();
+      setWallet(result.address, "EVM Wallet", result.token);
       return result.address;
     } catch (err) {
       console.error("[useWallet] Connection Error:", err);
-      const message = err instanceof Error ? err.message : "Failed to connect wallet.";
+      const message = err instanceof Error ? err.message : "Failed to connect EVM wallet.";
       setError(message);
       throw err;
     } finally {
@@ -33,33 +28,41 @@ export function useWallet() {
     }
   }, [setWallet]);
 
-
-  // Auto-reconnect on mount if we have persisted credentials
+  // Check auth status on mount
   useEffect(() => {
-    // Always re-hydrate in-memory controller on mount if a wallet type is stored
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof window !== "undefined" && walletType && !(window as any).__walletHydrated) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).__walletHydrated = true;
-      connect(walletType).catch(() => {
-        // Silently fail if extension is locked/unavailable
-      });
+    if (typeof window === "undefined") return;
+
+    if (walletAddress) {
+      fetch("/api/auth/me")
+        .then((res) => {
+          if (!res.ok) {
+            // Session expired or invalid
+            clearWallet();
+          }
+        })
+        .catch(() => {
+          // ignore network error
+        });
     }
-  }, [walletType, connect]);
+  }, [walletAddress, clearWallet]);
 
   const disconnect = useCallback(async () => {
-    const { clearOnboardCache } = await import("@/lib/starknet/starkzap");
-    clearOnboardCache();
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore
+    }
     clearWallet();
   }, [clearWallet]);
 
   return useMemo(() => ({
     walletAddress,
-    walletType,
+    walletType: walletType || "BOT Chain EVM",
+    authToken,
     isConnecting,
     error,
     connect,
     disconnect,
-    isConnected: Boolean(walletAddress && walletType)
-  }), [walletAddress, walletType, isConnecting, error, connect, disconnect]);
+    isConnected: Boolean(walletAddress)
+  }), [walletAddress, walletType, authToken, isConnecting, error, connect, disconnect]);
 }

@@ -3,27 +3,46 @@ import { createHash } from "crypto";
 
 import { createSubmission, getOrCreateProfile } from "@/lib/supabase/repositories";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getAuthenticatedWalletFromRequest } from "@/lib/evm/auth";
 
 export async function POST(request: Request) {
   try {
+    const authenticatedWallet = getAuthenticatedWalletFromRequest(request);
+    if (!authenticatedWallet) {
+      return NextResponse.json(
+        { error: "Authentication required. Connect and verify your EVM wallet first." },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
 
     const file = formData.get("file") as File | null;
-    const walletAddress = formData.get("walletAddress") as string | null;
+    const walletAddressRaw = formData.get("walletAddress") as string | null;
     const sessionId = formData.get("sessionId") as string | null;
     const capturedAt = formData.get("capturedAt") as string | null;
-    const latitude = parseFloat(formData.get("latitude") as string ?? "0");
-    const longitude = parseFloat(formData.get("longitude") as string ?? "0");
+    const latitude = parseFloat((formData.get("latitude") as string) ?? "0");
+    const longitude = parseFloat((formData.get("longitude") as string) ?? "0");
 
-    if (!file || !walletAddress || !sessionId || !capturedAt) {
+    if (!file || !sessionId || !capturedAt) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
+
+    // Address verification: if supplied, must match authenticated wallet
+    if (walletAddressRaw && walletAddressRaw.toLowerCase() !== authenticatedWallet.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Forbidden: Wallet address does not match authenticated session." },
+        { status: 403 }
+      );
+    }
+
+    const walletAddress = authenticatedWallet.toLowerCase();
 
     // Compute SHA256 server-side
     const arrayBuffer = await file.arrayBuffer();
     const imageSha256 = createHash("sha256").update(Buffer.from(arrayBuffer)).digest("hex");
     const ext = file.name.split(".").pop() ?? "jpg";
-    const imagePath = `${walletAddress.toLowerCase()}/${sessionId}/${imageSha256}.${ext}`;
+    const imagePath = `${walletAddress}/${sessionId}/${imageSha256}.${ext}`;
 
     // Upload to storage using admin client (bypasses RLS)
     const { error: uploadError } = await supabaseAdmin.storage
@@ -52,7 +71,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Daily submission limit (3) reached. Please touch grass again tomorrow!" }, { status: 429 });
     }
 
-
     const submission = await createSubmission({
       profileId: profile.id,
       sessionId,
@@ -63,11 +81,10 @@ export async function POST(request: Request) {
       longitude
     });
 
-    // Fire-and-forget edge function invocation — pass raw coords to avoid PostGIS re-parsing
+    // Fire-and-forget edge function invocation
     supabaseAdmin.functions.invoke("verify-submission", {
       body: { submissionId: submission.id, walletAddress, latitude, longitude }
     }).catch(console.error);
-
 
     return NextResponse.json({ submissionId: submission.id, status: "processing" }, { status: 201 });
   } catch (error) {

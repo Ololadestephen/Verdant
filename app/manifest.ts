@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Verdant",
+    name: "Verdant | Touch Grass on BOT Chain",
     short_name: "Verdant",
-    description: "Stake STRK, verify outdoor grass photos, and earn streak rewards.",
+    description: "Daily outdoor photo check-ins and milestone badges on BOT Chain.",
     start_url: "/dashboard",
     display: "standalone",
     background_color: "#f5faef",

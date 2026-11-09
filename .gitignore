@@ -37,3 +37,19 @@ next-env.d.ts
 # supabase
 .supabase/
 supabase/.temp/
+
+# desloppify
+.desloppify/
+scorecard.png
+
+# foundry
+contracts/evm/cache/
+contracts/evm/out/
+contracts/evm/lib/openzeppelin-contracts/test/
+contracts/evm/lib/openzeppelin-contracts/docs/
+contracts/evm/lib/openzeppelin-contracts/hardhat/
+contracts/evm/lib/forge-std/test/
+
+
+
+

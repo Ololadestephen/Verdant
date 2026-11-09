@@ -4,7 +4,7 @@ export const SESSION_TTL_MINUTES = 30;
 export const VERIFICATION_FRESHNESS_MINUTES = 10;
 export const DAILY_BASE_REWARD = 1;
 export const DAILY_REWARD_CAP = 25;
-export const MILESTONE_DAYS = [7, 30, 100] as const;
+export const MILESTONE_DAYS = [1, 7, 30, 100] as const;
 
 export type MilestoneDay = (typeof MILESTONE_DAYS)[number];
 
@@ -14,9 +14,9 @@ export const stakeSchema = z.object({
 });
 
 export const startSessionSchema = z.object({
-  walletAddress: z.string().startsWith("0x").min(10),
-  stakeAmount: z.number().positive(),
-  stakeTxHash: z.string().startsWith("0x").min(10)
+  walletAddress: z.string().startsWith("0x").min(10).optional(),
+  stakeAmount: z.number().optional().default(0),
+  stakeTxHash: z.string().optional().default("bot_checkin")
 });
 
 export const createSubmissionSchema = z.object({

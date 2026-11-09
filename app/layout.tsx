@@ -8,8 +8,8 @@ import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Verdant",
-  description: "Starknet DeFi game that rewards outdoor activity.",
+  title: "Verdant | Touch Grass on BOT Chain",
+  description: "BOT Chain outdoor check-in and milestone badge application.",
   icons: {
     icon: "/favicon.svg",
   },

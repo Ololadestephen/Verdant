@@ -11,7 +11,6 @@ export default function ProfilePage() {
   const { data: nfts } = useProfileNfts();
   const { data: balance } = useWalletBalance();
 
-
   return (
     <div className="space-y-4">
       <section className="tg-card">
@@ -21,26 +20,28 @@ export default function ProfilePage() {
       <section className="tg-card">
         <h2 className="text-xl font-semibold">Stats</h2>
         <p className="mt-2 text-sm text-muted-foreground">Wallet: {summary?.profile.wallet_address ?? "Connect wallet"}</p>
-        <p className="mt-1 text-sm text-muted-foreground">Total earned: {Number(summary?.profile.total_earned ?? 0).toFixed(2)} STRK</p>
+        <p className="mt-1 text-sm text-muted-foreground">Total Activity Points: {Math.floor(Number(summary?.profile.total_earned ?? 0) * 10)} PTS</p>
         <p className="mt-1 text-sm text-muted-foreground">Verified submissions: {summary?.profile.total_verified_submissions ?? 0}</p>
         {balance && (
           <p className="mt-1 text-sm text-primary font-bold">
-            Live Balance: {balance.formatted}
+            BOT Chain Balance: {balance.formatted}
           </p>
         )}
       </section>
 
       <NftMilestones minted={(nfts ?? []).filter((nft) => nft.status === "minted" || nft.status === "pending").map((nft) => nft.milestone_day)} />
       <section className="tg-card">
-        <h2 className="text-lg font-semibold">NFT Mint Activity</h2>
+        <h2 className="text-lg font-semibold">Milestone Badge Activity</h2>
         <div className="mt-3 space-y-2 text-sm">
           {(nfts ?? []).map((nft) => (
-            <div key={nft.milestone_day} className="rounded-xl border border-border bg-white/80 px-3 py-2">
-              Milestone {nft.milestone_day}d: {nft.status}
-              {nft.token_id ? ` (Token ${nft.token_id})` : ""}
+            <div key={nft.milestone_day} className="rounded-xl border border-border bg-white/80 px-3 py-2 flex items-center justify-between">
+              <div>
+                <span className="font-semibold">Milestone {nft.milestone_day}d:</span> {nft.status}
+                {nft.token_id ? ` (Token #${nft.token_id})` : ""}
+              </div>
               {nft.status === "pending" ? (
-                <div className="mt-2">
-                  <ClaimNftButton milestoneDay={nft.milestone_day as 7 | 30 | 100} />
+                <div>
+                  <ClaimNftButton milestoneDay={nft.milestone_day} />
                 </div>
               ) : null}
             </div>

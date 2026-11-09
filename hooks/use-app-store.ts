@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-import type { SupportedWallet } from "@/lib/starknet/wallet";
-
 type CaptureMetadata = {
   file?: File;
   latitude?: number;
@@ -12,10 +10,11 @@ type CaptureMetadata = {
 
 type AppState = {
   walletAddress: string | null;
-  walletType: SupportedWallet | null;
+  walletType: string | null;
+  authToken: string | null;
   activeSessionId: string | null;
   capture: CaptureMetadata;
-  setWallet: (walletAddress: string, walletType: SupportedWallet) => void;
+  setWallet: (walletAddress: string, walletType: string, authToken?: string) => void;
   clearWallet: () => void;
   setActiveSessionId: (id: string | null) => void;
   setCapture: (capture: CaptureMetadata) => void;
@@ -27,10 +26,13 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       walletAddress: null,
       walletType: null,
+      authToken: null,
       activeSessionId: null,
       capture: {},
-      setWallet: (walletAddress, walletType) => set({ walletAddress, walletType }),
-      clearWallet: () => set({ walletAddress: null, walletType: null, activeSessionId: null, capture: {} }),
+      setWallet: (walletAddress, walletType, authToken) =>
+        set({ walletAddress, walletType, authToken: authToken ?? null }),
+      clearWallet: () =>
+        set({ walletAddress: null, walletType: null, authToken: null, activeSessionId: null, capture: {} }),
       setActiveSessionId: (id) => set({ activeSessionId: id }),
       setCapture: (capture) => set({ capture }),
       clearCapture: () => set({ capture: {} })
@@ -38,10 +40,10 @@ export const useAppStore = create<AppState>()(
     {
       name: "verdant-storage",
       storage: createJSONStorage(() => localStorage),
-      // Only persist connection info, not the capture file (which can't be serialized easily)
       partialize: (state) => ({
         walletAddress: state.walletAddress,
         walletType: state.walletType,
+        authToken: state.authToken,
         activeSessionId: state.activeSessionId
       })
     }

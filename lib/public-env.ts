@@ -3,6 +3,10 @@ import { z } from "zod";
 const PublicEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional().default("https://placeholder.supabase.co"),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional().default("placeholder_key"),
+  NEXT_PUBLIC_BOT_RPC_URL: z.string().url().optional().default("https://rpc.botchain.ai"),
+  NEXT_PUBLIC_BOT_CHAIN_ID: z.coerce.number().optional().default(677),
+  NEXT_PUBLIC_VERDANT_CHECKIN_CONTRACT: z.string().optional().default("0x0000000000000000000000000000000000000000"),
+  NEXT_PUBLIC_BOT_EXPLORER_URL: z.string().url().optional().default("https://scan.botchain.ai"),
   NEXT_PUBLIC_STARKNET_RPC_URL: z.string().url().optional().default("https://placeholder.rpc.url"),
   NEXT_PUBLIC_STARKNET_NETWORK: z.enum(["sepolia"]).optional().default("sepolia"),
   NEXT_PUBLIC_STARKNET_STAKING_CONTRACT: z.string().min(1).optional().default("0x0"),
@@ -15,6 +19,10 @@ const isBuild = process.env.npm_lifecycle_event === "build";
 const rawEnv = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_BOT_RPC_URL: process.env.NEXT_PUBLIC_BOT_RPC_URL,
+  NEXT_PUBLIC_BOT_CHAIN_ID: process.env.NEXT_PUBLIC_BOT_CHAIN_ID,
+  NEXT_PUBLIC_VERDANT_CHECKIN_CONTRACT: process.env.NEXT_PUBLIC_VERDANT_CHECKIN_CONTRACT,
+  NEXT_PUBLIC_BOT_EXPLORER_URL: process.env.NEXT_PUBLIC_BOT_EXPLORER_URL,
   NEXT_PUBLIC_STARKNET_RPC_URL: process.env.NEXT_PUBLIC_STARKNET_RPC_URL,
   NEXT_PUBLIC_STARKNET_NETWORK: process.env.NEXT_PUBLIC_STARKNET_NETWORK,
   NEXT_PUBLIC_STARKNET_STAKING_CONTRACT: process.env.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT,
@@ -30,6 +38,10 @@ if (!parsed.success && !isBuild && typeof window !== 'undefined') {
 export const publicEnv = parsed.success ? parsed.data : {
   NEXT_PUBLIC_SUPABASE_URL: rawEnv.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
   NEXT_PUBLIC_SUPABASE_ANON_KEY: rawEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder_key",
+  NEXT_PUBLIC_BOT_RPC_URL: rawEnv.NEXT_PUBLIC_BOT_RPC_URL || "https://rpc.botchain.ai",
+  NEXT_PUBLIC_BOT_CHAIN_ID: Number(rawEnv.NEXT_PUBLIC_BOT_CHAIN_ID || 677),
+  NEXT_PUBLIC_VERDANT_CHECKIN_CONTRACT: rawEnv.NEXT_PUBLIC_VERDANT_CHECKIN_CONTRACT || "0x0000000000000000000000000000000000000000",
+  NEXT_PUBLIC_BOT_EXPLORER_URL: rawEnv.NEXT_PUBLIC_BOT_EXPLORER_URL || "https://scan.botchain.ai",
   NEXT_PUBLIC_STARKNET_RPC_URL: rawEnv.NEXT_PUBLIC_STARKNET_RPC_URL || "https://placeholder.rpc.url",
   NEXT_PUBLIC_STARKNET_NETWORK: (rawEnv.NEXT_PUBLIC_STARKNET_NETWORK as "sepolia") || "sepolia",
   NEXT_PUBLIC_STARKNET_STAKING_CONTRACT: rawEnv.NEXT_PUBLIC_STARKNET_STAKING_CONTRACT || "0x0",

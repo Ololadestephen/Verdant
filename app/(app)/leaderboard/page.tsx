@@ -9,7 +9,7 @@ export default function LeaderboardPage() {
   return (
     <section className="tg-card">
       <h1 className="text-3xl font-semibold">Leaderboard</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Realtime ranking by total earned STRK.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Realtime ranking by check-in activity points on BOT Chain.</p>
 
       {isLoading ? <p className="mt-4 text-sm">Loading...</p> : null}
       {error ? <p className="mt-4 text-sm text-red-600">{error.message}</p> : null}
@@ -21,16 +21,16 @@ export default function LeaderboardPage() {
               <th className="py-2 pl-2">Rank</th>
               <th className="py-2">Wallet</th>
               <th className="py-2">Streak</th>
-              <th className="py-2 pr-2">Total Earned</th>
+              <th className="py-2 pr-2">Activity Points</th>
             </tr>
           </thead>
           <tbody>
             {(data ?? []).map((row) => (
               <tr key={row.id} className="border-b border-border/60 last:border-0">
                 <td className="py-2 pl-2 font-medium">#{row.rank}</td>
-                <td className="py-2">{row.username ?? shortAddress(row.wallet_address)}</td>
-                <td className="py-2">{row.current_streak}</td>
-                <td className="py-2 pr-2 font-medium">{Number(row.total_earned).toFixed(2)} STRK</td>
+                <td className="py-2 font-mono text-xs">{row.username ?? shortAddress(row.wallet_address)}</td>
+                <td className="py-2 font-semibold">{row.current_streak} days</td>
+                <td className="py-2 pr-2 font-medium">{Math.floor(Number(row.total_earned) * 10)} PTS</td>
               </tr>
             ))}
           </tbody>

@@ -21,15 +21,15 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-2 text-primary mb-1">
             <Zap className="h-4 w-4 fill-current" />
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Active Protocol</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Verdant on BOT Chain</span>
           </div>
           <h1 className="text-4xl font-bold">Command Center</h1>
-          <p className="text-muted-foreground mt-1">Manage your stakes and verify outdoor activity.</p>
+          <p className="text-muted-foreground mt-1">Verify daily outdoor activity and claim on-chain milestone badges.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="h-12 px-4 rounded-xl border border-border bg-card/50 backdrop-blur-md flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm font-medium">Starknet Sepolia</span>
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-sm font-medium">BOT Chain (677)</span>
           </div>
         </div>
       </section>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                     <Zap className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold underline md:no-underline">{Number(session.stake_amount).toFixed(2)} STRK</p>
+                    <p className="font-bold">{session.status.toUpperCase()} Check-In</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
                       {new Date(session.started_at).toLocaleDateString()} • {session.status}
                     </p>
@@ -99,16 +99,14 @@ export default function DashboardPage() {
               <div key={`${item.type}-${item.at}-${index}`} className="flex items-start gap-3 p-4 rounded-xl border border-border/50 bg-white/5">
                 <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm leading-relaxed">{item.message}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">
-                    {new Date(item.at).toLocaleString()}
-                  </p>
+                  <p className="text-xs font-medium">{item.message}</p>
+                  <p className="text-[10px] text-muted-foreground">{new Date(item.at).toLocaleTimeString()}</p>
                 </div>
               </div>
             ))}
             {(overview?.activity ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-sm text-muted-foreground">System telemetry waiting for activity.</p>
+                <p className="text-sm text-muted-foreground">No recent activity.</p>
               </div>
             ) : null}
           </div>
